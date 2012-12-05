@@ -33,7 +33,7 @@ void print_hex(char * hex, size_t len) {
 #define DERIVED_SIZE 64
 #define ADDRESSHASH_SIZE 4
 #define OWNERSALT_SIZE 8
- 
+
 int crack(char * pKey, char * pKey_pass) {
     int i;
     uint8_t passfactor[PASSFACTOR_SIZE];
@@ -52,11 +52,13 @@ int crack(char * pKey, char * pKey_pass) {
             (unsigned char)b58dec->str[2], (unsigned char)b58dec->str[3],
             (unsigned char)b58dec->str[4], (unsigned char)b58dec->str[5],
             (unsigned char)b58dec->str[6]);
-       	print_hex(&b58dec->str[3+ADDRESSHASH_SIZE], OWNERSALT_SIZE);
+        print_hex(&b58dec->str[3+ADDRESSHASH_SIZE], OWNERSALT_SIZE);
         printf("\r\n");
         */
         memset(passfactor,0,PASSFACTOR_SIZE);
-        crypto_scrypt( pKey_pass, strlen(pKey_pass), &(b58dec->str[3+ADDRESSHASH_SIZE]), OWNERSALT_SIZE, 16384, 8, 8, passfactor, PASSFACTOR_SIZE );
+        crypto_scrypt( pKey_pass, strlen(pKey_pass),
+                       &(b58dec->str[3+ADDRESSHASH_SIZE]), OWNERSALT_SIZE,
+                       16384, 8, 8, passfactor, PASSFACTOR_SIZE );
         /*
         printf("%s", "passfactor: ");
         print_hex(passfactor, PASSFACTOR_SIZE);
@@ -99,26 +101,36 @@ int crack(char * pKey, char * pKey_pass) {
     char passphrase_magic[] = { 0x2C, 0xE9, 0xB3, 0xE1, 0xFF, 0x39, 0xE2, 0x53 };
     memset(passphrase_bytes,0,PASSPHRASE_SIZE);
     memcpy(passphrase_bytes, passphrase_magic, PASSPHRASE_MAGIC_SIZE);
-    memcpy(passphrase_bytes + PASSPHRASE_MAGIC_SIZE, &b58dec->str[3+ADDRESSHASH_SIZE], OWNERSALT_SIZE);
-    memcpy(passphrase_bytes + PASSPHRASE_MAGIC_SIZE + OWNERSALT_SIZE, passpoint, passpoint_len);
-    GString * passphrase_g = base58_encode_check(0,false,passphrase_bytes, PASSPHRASE_SIZE);
-    printf("Passphrase: %s\r\n\r\n", passphrase_g->str);
+    memcpy(passphrase_bytes + PASSPHRASE_MAGIC_SIZE,
+        &b58dec->str[3+ADDRESSHASH_SIZE], OWNERSALT_SIZE);
+    memcpy(passphrase_bytes + PASSPHRASE_MAGIC_SIZE + OWNERSALT_SIZE,
+        passpoint, passpoint_len);
+    GString * passphrase_g = base58_encode_check(0,false,
+        passphrase_bytes, PASSPHRASE_SIZE);
+        printf("Passphrase: %s\r\n\r\n", passphrase_g->str);
     */
 
     // now we need to decrypt seedb
     uint8_t encryptedpart2[16];
     memset(encryptedpart2,0,16);
-    memcpy(encryptedpart2,&b58dec->str[3 + ADDRESSHASH_SIZE + OWNERSALT_SIZE + 8],16);
+    memcpy(encryptedpart2,
+           &b58dec->str[3 + ADDRESSHASH_SIZE + OWNERSALT_SIZE + 8],16);
     uint8_t encryptedpart1[16];
     memset(encryptedpart1,0,16);
-    memcpy(encryptedpart1,&b58dec->str[3 + ADDRESSHASH_SIZE + OWNERSALT_SIZE],8);
+    memcpy(encryptedpart1,
+           &b58dec->str[3 + ADDRESSHASH_SIZE + OWNERSALT_SIZE],8);
 
     unsigned char derived[DERIVED_SIZE];
-    // get the encryption key for seedb using scrypt with passpoint as the key, salt is addresshash+ownersalt
+    // get the encryption key for seedb using scrypt
+    // with passpoint as the key, salt is addresshash+ownersalt
     unsigned char derived_scrypt_salt[ADDRESSHASH_SIZE + OWNERSALT_SIZE];
-    memcpy(derived_scrypt_salt, &b58dec->str[3], ADDRESSHASH_SIZE); // copy the addresshash
-    memcpy(derived_scrypt_salt+ADDRESSHASH_SIZE, &b58dec->str[3+ADDRESSHASH_SIZE], OWNERSALT_SIZE); // copy the ownersalt
-    crypto_scrypt( passpoint, passpoint_len, derived_scrypt_salt, ADDRESSHASH_SIZE+OWNERSALT_SIZE, 1024, 1, 1, derived, DERIVED_SIZE );
+    memcpy(derived_scrypt_salt,
+           &b58dec->str[3], ADDRESSHASH_SIZE); // copy the addresshash
+    memcpy(derived_scrypt_salt+ADDRESSHASH_SIZE,
+           &b58dec->str[3+ADDRESSHASH_SIZE], OWNERSALT_SIZE); // copy the ownersalt
+    crypto_scrypt( passpoint, passpoint_len,
+                   derived_scrypt_salt, ADDRESSHASH_SIZE+OWNERSALT_SIZE,
+                   1024, 1, 1, derived, DERIVED_SIZE );
 
     //get decryption key
     unsigned char derivedhalf2[DERIVED_SIZE/2];
@@ -215,7 +227,8 @@ int crack(char * pKey, char * pKey_pass) {
     unsigned char checkHash[32];
     bu_Hash(checkHash, btcAddress->str, strlen(btcAddress->str));
 
-    /* printf("checkhash: %.02x%.02x%.02x%.02x\r\n",checkHash[0],checkHash[1],checkHash[2],checkHash[3]); */
+    /* printf("checkhash: %.02x%.02x%.02x%.02x\r\n",
+    checkHash[0],checkHash[1],checkHash[2],checkHash[3]); */
 
     if(!memcmp(&b58dec->str[3],checkHash,4)) {
         printf("!!!!!!!!!!!!!!!!!!!!\r\n");
@@ -286,7 +299,7 @@ int main(int argc, char * argv[]) {
     printf("casascius bip38 private key brute forcer\r\n");
 
     /* takes a single command line arg. */
-    /* if passed in, uses this as the starting string to check instead of AaAaA */
+    /* if passed in, this is the starting string to check instead of AaAaA */
     if(argc > 1) {
         strncpy(pass,argv[1],5);
     } else {
@@ -301,7 +314,7 @@ int main(int argc, char * argv[]) {
     /* the target encrypted private key to crack. */
     //const char pKey[] = "6PfTokDpyZUYwaVg37aZZ67MvD1bTyrCyjrjacz1XAgfVndWjZSsxLuDrE"; // official Casascius contest key
 
-    const char pKey[] = "6PfMxA1n3cqYarHoDqPRPLpBBJGWLDY1qX94z8Qyjg7XAMNZJMvHLqAMyS"; // test key that decrypts with AaAaA
+    const char pKey[] = "6PfMxA1n3cqYarHoDqPRPLpBBJGWLDY1qX94z8Qyjg7XAMNZJMvHLqAMyS"; // test key that decrypts with AaAaJ
     pthread_mutex_t coderoll_mutex = PTHREAD_MUTEX_INITIALIZER;
 
     for(i=0; i < NUM_THREADS; i++) {
