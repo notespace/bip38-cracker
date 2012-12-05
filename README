@@ -1,0 +1,31 @@
+# bip38-cracker
+
+brute-force cracker for casascius's BIP38 cracking contest, details here:
+
+https://bitcointalk.org/index.php?topic=128699.0
+
+-----
+
+# Usage
+
+- build libccoin inside of picocoin. I have removed the requirements to build the frontend, so it doesn't need a bunch of dependencies. I believe only openssl and glib. The bip38-cracker Makefile references libccoin.a .
+
+    # cd picocoin
+    # ./configure ; make
+    # cd ..
+
+- build the main cracker binary.
+   
+    # ./configure ; make
+
+- run the cracker
+
+    # ./cracker [optional starting string]
+
+----
+
+# Note
+
+- This probably leaks a bunch of memory and has a lot of bugs. For reference only.
+- The default implementation uses a key that decrypts with the password AaAaJ, so you can see how it runs without spending lots of time scrypt()ing.
+
